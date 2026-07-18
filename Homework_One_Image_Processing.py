@@ -334,6 +334,7 @@ for file in My_Subset:
     
 print("3.4 Complete")
 
+
 # %%
 # 3.8 Create 42, 5-image plots of the input image 
 # (from the start of part 3) next to the edge-detected images and
