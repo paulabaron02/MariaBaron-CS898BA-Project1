@@ -127,9 +127,74 @@ for Images, Labels in Train_Dataset.take(1):
 print("Part 2.2 done")
 # %% PART 2.3
 from tensorflow.keras import layers
-Data_Augmentation = tf.keras.Sequential([layers.RandomFlip("horizontal"),layers.RandomRotation(0.08),layers.RandomBrightness(0.15)])
+Data_Augmentation = tf.keras.Sequential([layers.RandomFlip("horizontal"),layers.RandomRotation(10/360),layers.RandomBrightness(factor=0.15,value_range=(0.0, 1.0))])
 
 for Images, Labels in Train_Dataset.take(1):
     Augmented_Images = Data_Augmentation(Images,training=True)
     print("Augmented image batch shape:", Augmented_Images.shape)
 print("Part 2.3 done")
+
+# %% PART 3.1
+Number_Of_Classes = len(Class_Names)
+Model = tf.keras.Sequential([tf.keras.layers.Input(shape=(Image_Height, Image_Width, 3)),
+    Data_Augmentation,
+    
+# Part 3.1.1
+    tf.keras.layers.Conv2D(filters=32,kernel_size=(3,3),activation="relu",padding="same"),
+# PART 3.1.2
+    tf.keras.layers.MaxPooling2D(pool_size=(2,2)),
+    
+# Part 3.1.1
+    tf.keras.layers.Conv2D(filters=64,kernel_size=(3,3),activation="relu",padding="same"),
+# PART 3.1.2
+    tf.keras.layers.MaxPooling2D(pool_size=(2,2)),
+    
+# Part 3.1.1
+    tf.keras.layers.Conv2D(filters=128,kernel_size=(3,3),activation="relu",padding="same"),
+# PART 3.1.2
+    tf.keras.layers.MaxPooling2D(pool_size=(2,2)),
+
+# PART 3.1.3
+    tf.keras.layers.Flatten(),
+    tf.keras.layers.Dense(units=128,activation="relu"),
+    tf.keras.layers.Dense(units=Number_Of_Classes,activation="softmax")])
+
+Model.summary()
+print("Part 3.1 done")
+
+# %% PART 3.2
+
+Learning_Rate = 0.001
+Epochs = 10
+
+Optimizer = tf.keras.optimizers.Adam(learning_rate=Learning_Rate)
+Model.compile(optimizer=Optimizer,loss="sparse_categorical_crossentropy",metrics=["accuracy"])
+History = Model.fit(Train_Dataset,validation_data=Validation_Dataset,epochs=Epochs)
+
+Model.save(os.path.join(Results_3,"Baseline_CNN_Model.keras"))
+print("Model saved successfully.")
+
+Epoch_Numbers = range(1,len(History.history["accuracy"]) + 1)
+Figure, Axes = plt.subplots(1,2,figsize=(12, 5))
+Axes[0].plot(Epoch_Numbers,History.history["loss"],label="Training")
+Axes[0].plot(Epoch_Numbers,History.history["val_loss"],label="Validation")
+Axes[0].set_title("Baseline CNN Loss")
+Axes[0].set_xlabel("Epoch")
+Axes[0].set_ylabel("Cross-Entropy Loss")
+Axes[0].legend()
+Axes[0].grid(alpha=0.3)
+
+Axes[1].plot(Epoch_Numbers,History.history["accuracy"],label="Training")
+Axes[1].plot(Epoch_Numbers,History.history["val_accuracy"],label="Validation")
+Axes[1].set_title("Baseline CNN Accuracy")
+Axes[1].set_xlabel("Epoch")
+Axes[1].set_ylabel("Accuracy")
+Axes[1].set_ylim(0, 1)
+Axes[1].legend()
+Axes[1].grid(alpha=0.3)
+
+
+Figure.tight_layout()
+Figure.savefig(os.path.join(Results_3,"Baseline_Training_Curves.png"),dpi=150)
+
+plt.show()
