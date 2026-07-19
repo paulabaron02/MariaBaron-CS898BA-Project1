@@ -13,16 +13,17 @@ import tensorflow as tf
 import os
 import shutil
 from sklearn.model_selection import train_test_split
-
-#import cv2
-#import scipy.stats as sp
-#import random
-#import re
-#import numpy as np
+import random
+import numpy as np
 
 plt.close('all')
 
-Results_3 = r"C:\Users\Paula\.spyder-py3\MariaBaron-CS898BA-Project1\MariaBaron-CS898BA-Project1\Results_"
+Random_Seed = 42
+random.seed(Random_Seed)
+np.random.seed(Random_Seed)
+tf.random.set_seed(Random_Seed)
+
+Results_3 = r"C:\Users\Paula\.spyder-py3\MariaBaron-CS898BA-Project1\MariaBaron-CS898BA-Project1\Results_3"
 
 if os.path.exists(Results_3):shutil.rmtree(Results_3)
 os.makedirs(Results_3)
@@ -198,3 +199,295 @@ Figure.tight_layout()
 Figure.savefig(os.path.join(Results_3,"Baseline_Training_Curves.png"),dpi=150)
 
 plt.show()
+
+# %% PART 4.1
+
+Learning_Rates = [0.01, 0.001, 0.0001]
+Batch_Sizes = [32, 64]
+Dropout_Rates = [0.3, 0.5]
+
+def Build_Model(Dropout_Rate):
+
+    Model = tf.keras.Sequential([tf.keras.layers.Input(shape=(Image_Height, Image_Width, 3)),
+        Data_Augmentation,
+
+        tf.keras.layers.Conv2D(32,(3, 3),activation="relu",padding="same"),
+        tf.keras.layers.MaxPooling2D((2, 2)),
+
+        tf.keras.layers.Conv2D(64,(3, 3),activation="relu",padding="same"),
+        tf.keras.layers.MaxPooling2D((2, 2)),
+
+        tf.keras.layers.Conv2D(128,(3, 3), activation="relu",padding="same"),
+        tf.keras.layers.MaxPooling2D((2, 2)),
+
+        tf.keras.layers.Flatten(),
+        tf.keras.layers.Dense(128,activation="relu"),
+        tf.keras.layers.Dropout(Dropout_Rate),
+        tf.keras.layers.Dense(Number_Of_Classes,activation="softmax")])
+
+    return Model
+
+print("Part 4.1 done")
+
+# %% PART 4.2
+
+Tuning_Results = []
+
+Best_Validation_Loss = float("inf")
+Best_Configuration = None
+Best_Model_Path = os.path.join(Results_3,"Best_Optimized_CNN_Model.keras")
+Temporary_Model_Path = os.path.join(Results_3,"Temporary_Best_Model.keras")
+
+for Learning_Rate_Value in Learning_Rates:
+
+    for Batch_Size_Value in Batch_Sizes:
+
+        for Dropout_Rate_Value in Dropout_Rates:
+
+            print("\nLearning Rate:",Learning_Rate_Value,"| Batch Size:",Batch_Size_Value,"| Dropout Rate:",Dropout_Rate_Value)
+
+            tf.keras.backend.clear_session()
+            Batch_Size = Batch_Size_Value
+            Train_Dataset_Tuning = Create_Dataset(Train_DataFrame,Shuffle=True)
+            Validation_Dataset_Tuning = Create_Dataset(Validation_DataFrame,Shuffle=False)
+            Tuning_Model = Build_Model(Dropout_Rate_Value)
+
+            Tuning_Model.compile(optimizer=tf.keras.optimizers.Adam(learning_rate=Learning_Rate_Value),
+                loss="sparse_categorical_crossentropy",metrics=["accuracy"])
+
+            Model_Checkpoint = tf.keras.callbacks.ModelCheckpoint(
+                filepath=Temporary_Model_Path,
+                monitor="val_loss",
+                mode="min",
+                save_best_only=True)
+
+            Tuning_History = Tuning_Model.fit(
+                Train_Dataset_Tuning,
+                validation_data=Validation_Dataset_Tuning,
+                epochs=Epochs,
+                callbacks=[Model_Checkpoint],
+                verbose=1)
+
+            Minimum_Validation_Loss = min(Tuning_History.history["val_loss"])
+            Best_Epoch = Tuning_History.history["val_loss"].index(Minimum_Validation_Loss) + 1
+            Best_Validation_Accuracy = Tuning_History.history["val_accuracy"][Best_Epoch-1]
+
+            Tuning_Results.append({
+                "Learning_Rate":Learning_Rate_Value,
+                "Batch_Size":Batch_Size_Value,
+                "Dropout_Rate":Dropout_Rate_Value,
+                "Validation_Loss":Minimum_Validation_Loss,
+                "Validation_Accuracy":Best_Validation_Accuracy,
+                "Best_Epoch":Best_Epoch
+            })
+
+            if Minimum_Validation_Loss < Best_Validation_Loss:
+
+                Best_Validation_Loss = Minimum_Validation_Loss
+
+                Best_Configuration = {
+                    "Learning_Rate":Learning_Rate_Value,
+                    "Batch_Size":Batch_Size_Value,
+                    "Dropout_Rate":Dropout_Rate_Value,
+                    "Validation_Loss":Minimum_Validation_Loss,
+                    "Validation_Accuracy":Best_Validation_Accuracy,
+                    "Best_Epoch":Best_Epoch
+                }
+
+                Best_Current_Model = tf.keras.models.load_model(Temporary_Model_Path)
+                Best_Current_Model.save(Best_Model_Path)
+
+                Best_Optimized_History = pd.DataFrame(Tuning_History.history)
+                Best_Optimized_History.to_csv(os.path.join(Results_3,"Best_Optimized_Model_History.csv"),index=False)
+
+if os.path.exists(Temporary_Model_Path):
+    os.remove(Temporary_Model_Path)
+
+print("Part 4.2 done")
+
+
+# %% PART 4.3
+
+Tuning_Results_DataFrame = pd.DataFrame(Tuning_Results)
+Tuning_Results_DataFrame.to_csv(os.path.join(Results_3,"Hyperparameter_Tuning_Results.csv"),index=False)
+
+print(Tuning_Results_DataFrame)
+
+print("\nHyperparameter tuning results:")
+print(Tuning_Results_DataFrame)
+
+print("\nBest configuration:")
+print(Best_Configuration)
+
+print("\nBest validation loss:")
+print(Best_Validation_Loss)
+
+print("\nBest model saved as:")
+print(Best_Model_Path)
+print("Part 4.3 done")
+
+Baseline_Model_Path = os.path.join(Results_3,"Baseline_CNN_Model.keras")
+Optimized_Model_Path = os.path.join(Results_3,"Best_Optimized_CNN_Model.keras")
+Loaded_Baseline_Model = tf.keras.models.load_model(Baseline_Model_Path)
+Loaded_Optimized_Model = tf.keras.models.load_model(Optimized_Model_Path)
+
+print("\nBASELINE MODEL:")
+Loaded_Baseline_Model.summary()
+
+print("\nOPTIMIZED MODEL:")
+Loaded_Optimized_Model.summary()
+
+Batch_Size = Best_Configuration["Batch_Size"]
+Test_Dataset = Create_Dataset(Test_DataFrame,Shuffle=False)
+
+Baseline_Test_Loss, Baseline_Test_Accuracy = (Loaded_Baseline_Model.evaluate(Test_Dataset,verbose=0))
+Optimized_Test_Loss, Optimized_Test_Accuracy = (Loaded_Optimized_Model.evaluate(Test_Dataset,verbose=0))
+
+print("\nBaseline model:")
+print("Test loss:", Baseline_Test_Loss)
+print("Test accuracy:", Baseline_Test_Accuracy)
+
+print("\nOptimized model:")
+print("Test loss:", Optimized_Test_Loss)
+print("Test accuracy:", Optimized_Test_Accuracy)
+
+# %% PART 5.1
+
+from sklearn.metrics import (
+    accuracy_score,
+    precision_score,
+    recall_score,
+    f1_score,
+    classification_report,
+    confusion_matrix,
+    ConfusionMatrixDisplay
+)
+
+Baseline_Model_Path = os.path.join(Results_3,"Baseline_CNN_Model.keras")
+Optimized_Model_Path = os.path.join(Results_3,"Best_Optimized_CNN_Model.keras")
+
+Baseline_Model = tf.keras.models.load_model(Baseline_Model_Path)
+Optimized_Model = tf.keras.models.load_model(Optimized_Model_Path)
+
+print("Part 5.1 done")
+
+
+# %% PART 5.2
+
+True_Labels = np.concatenate([Labels.numpy()for Images, Labels in Test_Dataset])
+
+Baseline_Probabilities = Baseline_Model.predict(Test_Dataset)
+Optimized_Probabilities = Optimized_Model.predict(Test_Dataset)
+
+Baseline_Predictions = np.argmax(Baseline_Probabilities,axis=1)
+Optimized_Predictions = np.argmax(Optimized_Probabilities,axis=1)
+
+
+Baseline_Accuracy = accuracy_score(True_Labels,Baseline_Predictions)
+Baseline_Precision = precision_score(True_Labels,Baseline_Predictions,average="weighted",zero_division=0)
+Baseline_Recall = recall_score(True_Labels,Baseline_Predictions,average="weighted",zero_division=0)
+Baseline_F1_Score = f1_score(True_Labels,Baseline_Predictions,average="weighted",zero_division=0)
+
+Optimized_Accuracy = accuracy_score(True_Labels,Optimized_Predictions)
+Optimized_Precision = precision_score(True_Labels,Optimized_Predictions,average="weighted",zero_division=0)
+Optimized_Recall = recall_score(True_Labels,Optimized_Predictions,average="weighted",zero_division=0)
+Optimized_F1_Score = f1_score(True_Labels,Optimized_Predictions,average="weighted",zero_division=0)
+
+
+print("\nBASELINE MODEL RESULTS")
+
+print("Accuracy:", Baseline_Accuracy)
+print("Precision:", Baseline_Precision)
+print("Recall:", Baseline_Recall)
+print("F1-Score:", Baseline_F1_Score)
+
+print("\nBaseline classification report:")
+
+print(classification_report(True_Labels,Baseline_Predictions,target_names=Class_Names,zero_division=0))
+
+print("\nOPTIMIZED MODEL RESULTS")
+
+print("Accuracy:", Optimized_Accuracy)
+print("Precision:", Optimized_Precision)
+print("Recall:", Optimized_Recall)
+print("F1-Score:", Optimized_F1_Score)
+
+print("\nOptimized classification report:")
+
+print(classification_report(True_Labels,Optimized_Predictions,target_names=Class_Names,zero_division=0))
+
+
+Comparison_DataFrame = pd.DataFrame({
+    "Model": ["Baseline CNN","Optimized CNN"],
+    "Accuracy": [Baseline_Accuracy,Optimized_Accuracy],
+    "Precision": [Baseline_Precision,Optimized_Precision],
+    "Recall": [Baseline_Recall,Optimized_Recall],
+    "F1_Score": [Baseline_F1_Score,Optimized_F1_Score]})
+
+Comparison_DataFrame.to_csv(os.path.join(Results_3,"Baseline_Optimized_Comparison.csv"),index=False)
+
+print("\nModel comparison:")
+print(Comparison_DataFrame)
+
+print("Part 5.2 done")
+
+
+# %% PART 5.3
+
+Optimized_History_DataFrame = pd.read_csv(os.path.join(Results_3,"Best_Optimized_Model_History.csv"))
+
+Baseline_Epochs = range(1,len(History.history["loss"]) + 1)
+Optimized_Epochs = range(1,len(Optimized_History_DataFrame) + 1)
+Figure = plt.figure(figsize=(18, 10),constrained_layout=True)
+Grid = Figure.add_gridspec(2,3)
+
+Axis_1 = Figure.add_subplot(Grid[0, 0])
+Axis_1.plot(Baseline_Epochs,History.history["loss"],label="Training")
+Axis_1.plot(Baseline_Epochs,History.history["val_loss"],label="Validation")
+Axis_1.set_title("Baseline CNN Loss")
+Axis_1.set_xlabel("Epoch")
+Axis_1.set_ylabel("Cross-Entropy Loss")
+Axis_1.legend()
+Axis_1.grid(alpha=0.3)
+
+Axis_2 = Figure.add_subplot(Grid[0, 1])
+Axis_2.plot(Baseline_Epochs,History.history["accuracy"],label="Training")
+Axis_2.plot(Baseline_Epochs,History.history["val_accuracy"],label="Validation")
+Axis_2.set_title("Baseline CNN Accuracy")
+Axis_2.set_xlabel("Epoch")
+Axis_2.set_ylabel("Accuracy")
+Axis_2.set_ylim(0,1)
+Axis_2.legend()
+Axis_2.grid(alpha=0.3)
+
+Axis_3 = Figure.add_subplot(Grid[1, 0])
+Axis_3.plot(Optimized_Epochs,Optimized_History_DataFrame["loss"],label="Training")
+Axis_3.plot(Optimized_Epochs,Optimized_History_DataFrame["val_loss"],label="Validation")
+Axis_3.set_title("Optimized CNN Loss")
+Axis_3.set_xlabel("Epoch")
+Axis_3.set_ylabel("Cross-Entropy Loss")
+Axis_3.legend()
+Axis_3.grid(alpha=0.3)
+
+Axis_4 = Figure.add_subplot(Grid[1, 1])
+Axis_4.plot(Optimized_Epochs,Optimized_History_DataFrame["accuracy"],label="Training")
+Axis_4.plot(Optimized_Epochs,Optimized_History_DataFrame["val_accuracy"],label="Validation")
+Axis_4.set_title("Optimized CNN Accuracy")
+Axis_4.set_xlabel("Epoch")
+Axis_4.set_ylabel("Accuracy")
+Axis_4.set_ylim(0,1)
+Axis_4.legend()
+Axis_4.grid(alpha=0.3)
+
+Axis_5 = Figure.add_subplot(Grid[:, 2])
+Optimized_Confusion_Matrix = confusion_matrix(True_Labels,Optimized_Predictions)
+Confusion_Matrix_Display = ConfusionMatrixDisplay(confusion_matrix=Optimized_Confusion_Matrix,display_labels=Class_Names)
+Confusion_Matrix_Display.plot(ax=Axis_5,cmap="Blues",colorbar=False,values_format="d")
+Axis_5.set_title("Optimized CNN Confusion Matrix")
+Axis_5.tick_params(axis="x",labelrotation=45)
+
+Figure.suptitle("Baseline and Optimized CNN Evaluation",fontsize=16)
+Figure.savefig(os.path.join(Results_3,"Baseline_Optimized_Evaluation.png"),dpi=150)
+plt.show()
+
+print("Part 5.3 done")
