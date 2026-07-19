@@ -27,27 +27,33 @@ Armed with your deep learning pipeline knowledge, you decide to construct a robu
 
 ## Part 2: Data Preprocessing & Augmentation
 
-Before feeding the images into your network, you must establish a clean data pipeline to prevent overfitting and ensure consistent input dimensions:
+**Part 2.1** 
 
-1. **Pipeline Implementation:**
-   * Load the provided fish dataset and split it into stratified training, validation, and testing sets (e.g., 70/15/15).
-   * Resize all images to a uniform target dimension (e.g., $128 \times 128$ or $224 \times 224$ pixels) and normalize pixel intensities to a $[0, 1]$ or $[-1, 1]$ range.
-   * Implement data augmentation techniques on the training set (e.g., random horizontal flips, minor rotations, and brightness adjustments) to increase model generalization.
+The code iterates through the subfolders of the Fish directory, extracts the paths of all images along with their respective labels, and constructs a DataFrame. It then performs a stratified split to divide the data into 70% Training, 15% Validation, and 15% Testing, ensuring that all classes maintain the same proportion within each subset. This organization allows the model to be trained, validated, and finally evaluated on unseen data. According to Mastering OpenCV 4 with Python, a proper separation of the dataset helps reduce overfitting and provides a more reliable evaluation of the model's ability to generalize to new images.
+
+**Part 2.2** 
+
+tf.data pipeline is created to resize all images to 128 × 128 pixels, convert them to the float32 data type, and normalize their intensity values to the [0,1] range by dividing by 255. The pipeline also uses batching, parallel loading, and prefetching to efficiently prepare the data for training. As described in Mastering OpenCV 4 with Python, images are represented as multidimensional arrays of pixel values, so preprocessing them into a consistent size and numerical scale ensures they can be processed efficiently by deep learning models.
+
+**Part 2.3**
+
+A sequential data augmentation block is created to apply random horizontal flips, rotations, and brightness adjustments during training. These transformations increase the variability of the training images without changing their labels, making the model more robust to changes in orientation and lighting. As explained in Mastering OpenCV 4 with Python, deep learning models generally achieve better performance when trained with larger and more diverse datasets, making data augmentation an effective technique for improving generalization and reducing overfitting.
 
 ---
 
-## Part 3: Baseline CNN Architecture
+## Part 3:
 
-Design and implement a custom Convolutional Neural Network from scratch using PyTorch or TensorFlow/Keras:
+**Part 3.1**
 
-1. **Network Structure:**
-   * **Convolutional Layers:** Stack at least 3 convolutional layers with increasing filter sizes (e.g., 32, 64, 128) using ReLU activation.
-   * **Pooling Layers:** Apply Max-Pooling after convolutional blocks to downsample spatial dimensions.
-   * **Dense Layers:** Flatten the feature maps and pass them through at least one fully connected hidden layer before the final softmax output layer.
-2. **Initial Training:**
-   * Train this baseline model using standard initial hyperparameters (e.g., Adam optimizer, learning rate of 0.001, batch size of 32) for a fixed number of epochs.
+For this part a neural network is created to classify the fish images. The model receives RGB images of 128×128 pixels and first applies the previously defined data augmentation transformations. It then uses three Conv2D and MaxPooling2D blocks with 32, 64, and 128 filters. The convolutional layers progressively learn visual features such as edges, textures, colors, and fish shapes, while the pooling layers reduce the spatial dimensions and computational cost. This follows the deep-learning principle described in Mastering OpenCV 4 with Python, where multiple layers progressively transform the input and automatically extract increasingly complex features for classification.
 
-> **Note:** Save the trained baseline model weights and plot its training/validation loss and accuracy curves.
+After feature extraction, the Flatten layer converts the feature maps into a one-dimensional vector. A dense layer with 128 neurons combines the learned features, while the final softmax layer produces a probability for each fish class. The class with the highest probability is selected as the model’s prediction.
+
+**Part 3.2**
+
+In this part, the model is compiled using the Adam optimizer with a learning rate of 0.001 and the sparse_categorical_crossentropy loss function because the fish labels are represented as integer indices. The model is then trained for 10 epochs using the training dataset, while its performance is evaluated with the validation dataset after each epoch.
+
+According to the graphicson the folder Results 3 the model showed consistent learning throughout training, with decreasing loss and increasing accuracy. It achieved training accuracy and validation accuracy. The difference between the training and validation curves indicates slight overfitting during the final epochs, although the model still demonstrated good classification performance.
 
 ---
 
@@ -70,7 +76,7 @@ To push the classification metrics higher, perform a systematic hyperparameter t
 
 Evaluate your baseline model alongside your optimized model using the held-out test dataset.
 
-1. **Qualitative Analysis:**
+1. **Qulitative Analysis:**
    * Discuss how specific data augmentation techniques impacted training stability. Analyze the effects of your hyperparameter adjustments, detailing which parameters yielded the most significant improvements in preventing overfitting or accelerating convergence.
 2. **Quantitative Comparison:**
    * Generate a comprehensive classification report for both the baseline and optimized models. Calculate and print the **Accuracy, Precision, Recall, and F1-Score** across all fish classes.
