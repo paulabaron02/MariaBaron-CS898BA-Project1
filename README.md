@@ -41,18 +41,19 @@ A sequential data augmentation block is created to apply random horizontal flips
 
 ---
 
-## Part 3: Baseline CNN Architecture
+## Part 3:
 
-Design and implement a custom Convolutional Neural Network from scratch using PyTorch or TensorFlow/Keras:
+**Part 3.1**
 
-1. **Network Structure:**
-   * **Convolutional Layers:** Stack at least 3 convolutional layers with increasing filter sizes (e.g., 32, 64, 128) using ReLU activation.
-   * **Pooling Layers:** Apply Max-Pooling after convolutional blocks to downsample spatial dimensions.
-   * **Dense Layers:** Flatten the feature maps and pass them through at least one fully connected hidden layer before the final softmax output layer.
-2. **Initial Training:**
-   * Train this baseline model using standard initial hyperparameters (e.g., Adam optimizer, learning rate of 0.001, batch size of 32) for a fixed number of epochs.
+For this part a neural network is created to classify the fish images. The model receives RGB images of 128×128 pixels and first applies the previously defined data augmentation transformations. It then uses three Conv2D and MaxPooling2D blocks with 32, 64, and 128 filters. The convolutional layers progressively learn visual features such as edges, textures, colors, and fish shapes, while the pooling layers reduce the spatial dimensions and computational cost. This follows the deep-learning principle described in Mastering OpenCV 4 with Python, where multiple layers progressively transform the input and automatically extract increasingly complex features for classification.
 
-> **Note:** Save the trained baseline model weights and plot its training/validation loss and accuracy curves.
+After feature extraction, the Flatten layer converts the feature maps into a one-dimensional vector. A dense layer with 128 neurons combines the learned features, while the final softmax layer produces a probability for each fish class. The class with the highest probability is selected as the model’s prediction.
+
+**Part 3.2**
+
+In this part, the model is compiled using the Adam optimizer with a learning rate of 0.001 and the sparse_categorical_crossentropy loss function because the fish labels are represented as integer indices. The model is then trained for 10 epochs using the training dataset, while its performance is evaluated with the validation dataset after each epoch.
+
+According to the graphicson the folder Results 3 the model showed consistent learning throughout training, with decreasing loss and increasing accuracy. It achieved training accuracy and validation accuracy. The difference between the training and validation curves indicates slight overfitting during the final epochs, although the model still demonstrated good classification performance.
 
 ---
 
@@ -75,7 +76,7 @@ To push the classification metrics higher, perform a systematic hyperparameter t
 
 Evaluate your baseline model alongside your optimized model using the held-out test dataset.
 
-1. **Qualitative Analysis:**
+1. **Qulitative Analysis:**
    * Discuss how specific data augmentation techniques impacted training stability. Analyze the effects of your hyperparameter adjustments, detailing which parameters yielded the most significant improvements in preventing overfitting or accelerating convergence.
 2. **Quantitative Comparison:**
    * Generate a comprehensive classification report for both the baseline and optimized models. Calculate and print the **Accuracy, Precision, Recall, and F1-Score** across all fish classes.
