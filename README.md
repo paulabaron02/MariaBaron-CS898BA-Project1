@@ -59,32 +59,52 @@ According to the graphicson the folder Results 3 the model showed consistent lea
 
 ## Part 4: Hyperparameter Optimization
 
-To push the classification metrics higher, perform a systematic hyperparameter tuning experiment:
+To find the best CNN configuration for the fish classification task, a grid search was performed by testing different combinations of three hyperparameters: learning rate (0.01, 0.001, and 0.0001), batch size (32 and 64), and dropout rate (0.3 and 0.5). This resulted in a total of 12 different configurations. For each combination, a new CNN model was built, compiled using the Adam optimizer, and trained using the training and validation datasets. Before each training session, the Keras backend session was cleared to ensure that every experiment started independently.
 
-1. **Tuning Strategy:**
-   * Select a tuning strategy (e.g., Grid Search, Random Search, or Bayesian Optimization via Optuna/KerasTuner).
-   * Experiment with a minimum of three distinct hyperparameters:
-     * **Learning Rate:** Test at least 3 values (e.g., 0.01, 0.001, 0.0001).
-     * **Batch Size:** Test at least 2 configurations (e.g., 32, 64).
-     * **Regularization:** Introduce and vary Dropout rates (e.g., 0.3 vs. 0.5) or Weight Decay ($L_2$ regularization) to combat overfitting.
+During training, the validation loss was monitored to identify the best-performing epoch for each configuration. The minimum validation loss, the corresponding validation accuracy, and the best epoch were recorded. Whenever a configuration achieved better validation performance than the previous ones, its model was saved as Best_Optimized_CNN_Model.keras.
 
-> **Note:** Identify and save the best-performing model configuration based on validation loss.
+After all configurations were evaluated, the results were stored in the file Hyperparameter_Tuning_Results for comparison. Finally, both the baseline CNN and the optimized CNN were evaluated using the test dataset to compare their loss and accuracy and determine how much performance improved after hyperparameter tuning.
 
 ---
 
 ## Part 5: Evaluation and Analysis
 
-Evaluate your baseline model alongside your optimized model using the held-out test dataset.
+**Part 5.1** 
 
-1. **Qulitative Analysis:**
-   * Discuss how specific data augmentation techniques impacted training stability. Analyze the effects of your hyperparameter adjustments, detailing which parameters yielded the most significant improvements in preventing overfitting or accelerating convergence.
-2. **Quantitative Comparison:**
-   * Generate a comprehensive classification report for both the baseline and optimized models. Calculate and print the **Accuracy, Precision, Recall, and F1-Score** across all fish classes.
+The baseline CNN and the optimized CNN were evaluated using the same held-out test dataset to analyze the effect of data augmentation and hyperparameter tuning on the model performance.
 
-$$F_1 = 2 \cdot \frac{\text{Precision} \cdot \text{Recall}}{\text{Precision} + \text{Recall}}$$
+Data augmentation (horizontal flip, random rotation, and random brightness) helped increase the diversity of the training images and reduced overfitting during training. Both models showed a continuous decrease in training loss while maintaining relatively stable validation accuracy, indicating that the augmentation techniques improved the model's ability to generalize.
 
-3. **Visualization:**
-   * Generate a side-by-side visualization including the training vs. validation loss/accuracy curves for both models, alongside a multi-class **Confusion Matrix** of the optimized model's test performance. Include this image grid in your updated `README.md`.
+During hyperparameter tuning, twelve different combinations of learning rate, batch size, and dropout rate were evaluated. The best validation performance was obtained using a learning rate of 0.001, a batch size of 64, and a dropout rate of 0.3. Although this configuration produced the lowest validation loss among the tested combinations, it did not outperform the baseline model on the independent test dataset.
+
+This result suggests that the selected hyperparameters improved optimization during validation but did not provide better generalization to unseen data. Therefore, the baseline architecture remained the best-performing model for this dataset.
+
+**Part 5.2**
+
+The baseline CNN achieved a test accuracy of 81.70%, while the optimized CNN obtained 79.74%. Similar behavior was observed for the remaining evaluation metrics.
+
+| Metric |	Baseline CNN |	Optimized CNN |
+|---|---|---|
+| Accuracy |	81.70%	| 79.74% |
+| Precision	| 81.35%	| 80.47% |
+| Recall	| 81.70%	| 79.74% |
+| F1-Score	| 80.88%	| 79.78% |
+
+The baseline model achieved higher overall performance across all evaluation metrics.
+From the class-wise classification reports, both models performed well on the Discuss and Gold classes, while the Cray and Oscar classes remained the most challenging. These classes showed lower recall and F1-scores, indicating that they were more frequently confused with other fish species.
+Although the optimized model slightly improved precision for the Discuss class (1.00 compared to 0.94), this improvement was not sufficient to increase the overall classification performance.
+Overall, the quantitative evaluation indicates that hyperparameter tuning did not improve the final classification accuracy for this dataset.
+
+**Part 5.3**
+
+The training and validation curves show that both models successfully learned the classification task. Training loss decreased steadily throughout the training process, while validation accuracy remained relatively stable.
+
+<img width="2700" height="1500" alt="Baseline_Optimized_Evaluation" src="https://github.com/user-attachments/assets/385bc2ea-cf4e-4b80-a5cb-574fee05276b" />
+
+The optimized CNN exhibited slightly smoother learning curves due to the inclusion of dropout regularization. However, this additional regularization also reduced the final test accuracy, suggesting that the model became slightly underfitted for this relatively small dataset.
+
+The confusion matrix confirms that most prediction errors occurred between visually similar fish species. The largest number of misclassifications involved the Oscar and Cray classes, whereas the Discuss, Gold, and Guppy classes were classified with higher consistency.
+Overall, the visual analysis agrees with the quantitative metrics, showing that the baseline CNN generalized slightly better than the optimized CNN despite the hyperparameter tuning process.
 
 ---
 
