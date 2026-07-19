@@ -28,12 +28,15 @@ Armed with your deep learning pipeline knowledge, you decide to construct a robu
 ## Part 2: Data Preprocessing & Augmentation
 
 **Part 2.1** 
+
 The code iterates through the subfolders of the Fish directory, extracts the paths of all images along with their respective labels, and constructs a DataFrame. It then performs a stratified split to divide the data into 70% Training, 15% Validation, and 15% Testing, ensuring that all classes maintain the same proportion within each subset. This organization allows the model to be trained, validated, and finally evaluated on unseen data. According to Mastering OpenCV 4 with Python, a proper separation of the dataset helps reduce overfitting and provides a more reliable evaluation of the model's ability to generalize to new images.
 
 **Part 2.2** 
+
 tf.data pipeline is created to resize all images to 128 × 128 pixels, convert them to the float32 data type, and normalize their intensity values to the [0,1] range by dividing by 255. The pipeline also uses batching, parallel loading, and prefetching to efficiently prepare the data for training. As described in Mastering OpenCV 4 with Python, images are represented as multidimensional arrays of pixel values, so preprocessing them into a consistent size and numerical scale ensures they can be processed efficiently by deep learning models.
 
 **Part 2.3**
+
 A sequential data augmentation block is created to apply random horizontal flips, rotations, and brightness adjustments during training. These transformations increase the variability of the training images without changing their labels, making the model more robust to changes in orientation and lighting. As explained in Mastering OpenCV 4 with Python, deep learning models generally achieve better performance when trained with larger and more diverse datasets, making data augmentation an effective technique for improving generalization and reducing overfitting.
 
 ---
